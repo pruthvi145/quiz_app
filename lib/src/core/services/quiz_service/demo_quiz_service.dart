@@ -5,6 +5,7 @@ import 'package:quiz_app/src/core/services/quiz_service/quiz_service_base.dart';
 class DemoQuizService implements QuizServiceBase {
   @override
   Future<List<Question>> getQuestions() async {
+    await Future.delayed(Duration(seconds: 3));
     return data.keys
         .toList()
         .asMap()

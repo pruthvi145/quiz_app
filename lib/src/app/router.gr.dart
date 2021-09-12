@@ -8,6 +8,7 @@ import 'package:auto_route/auto_route.dart' as _i1;
 import 'package:flutter/material.dart' as _i2;
 
 import '../ui/view/home_screen.dart' as _i3;
+import '../ui/view/quiz/quiz_result_screen.dart' as _i5;
 import '../ui/view/quiz/quiz_screen.dart' as _i4;
 
 class AppRouter extends _i1.RootStackRouter {
@@ -27,13 +28,19 @@ class AppRouter extends _i1.RootStackRouter {
         routeData: routeData,
         builder: (_) {
           return _i4.QuizScreen();
+        }),
+    QuizResultScreen.name: (routeData) => _i1.MaterialPageX<dynamic>(
+        routeData: routeData,
+        builder: (_) {
+          return const _i5.QuizResultScreen();
         })
   };
 
   @override
   List<_i1.RouteConfig> get routes => [
         _i1.RouteConfig(HomeScreen.name, path: '/'),
-        _i1.RouteConfig(QuizScreen.name, path: '/quiz-screen')
+        _i1.RouteConfig(QuizScreen.name, path: '/quiz-screen'),
+        _i1.RouteConfig(QuizResultScreen.name, path: '/quiz-result-screen')
       ];
 }
 
@@ -54,4 +61,10 @@ class QuizScreen extends _i1.PageRouteInfo<void> {
   const QuizScreen() : super(name, path: '/quiz-screen');
 
   static const String name = 'QuizScreen';
+}
+
+class QuizResultScreen extends _i1.PageRouteInfo<void> {
+  const QuizResultScreen() : super(name, path: '/quiz-result-screen');
+
+  static const String name = 'QuizResultScreen';
 }

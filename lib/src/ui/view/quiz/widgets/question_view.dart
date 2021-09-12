@@ -26,9 +26,9 @@ class QuestionView extends StatelessWidget {
             .map(
               (option) => OptionCard(
                 option: option,
-                onSelect: context.read<QuestionViewmodel>().onSelect,
+                onSelect: context.read<QuestionViewModel>().onSelect,
                 isSelected:
-                    context.watch<QuestionViewmodel>().selectedOption == option,
+                    context.watch<QuestionViewModel>().selectedOption == option,
               ),
             )
             .toList(),

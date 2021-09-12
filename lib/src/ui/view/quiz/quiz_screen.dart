@@ -1,10 +1,11 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 import 'package:quiz_app/src/core/models/option.dart';
 import 'package:quiz_app/src/core/models/question.dart';
 import 'package:quiz_app/src/ui/utils/colors.dart';
+import 'package:quiz_app/src/ui/view/quiz/quiz_screen_viewmodel.dart';
 import 'package:quiz_app/src/ui/view/quiz/quiz_viewmodel.dart';
 import 'package:quiz_app/src/ui/view/quiz/widgets/question_view.dart';
 import 'package:quiz_app/src/ui/view/quiz/widgets/question_viewmodel.dart';
@@ -26,100 +27,161 @@ class QuizScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<QuizViewModel>(create: (_) => QuizViewModel()),
-        ChangeNotifierProxyProvider<QuizViewModel, QuestionViewmodel>(
-          create: (_) {
-            print("Creating QuestionViewmodel...");
-            return QuestionViewmodel();
-          },
-          update: (_, quizViewModel, questionViewModel) =>
-              questionViewModel == null
-                  ? QuestionViewmodel()
-                  : questionViewModel
-                ..update(quizViewModel),
+        ChangeNotifierProvider<QuizScreenViewModel>(
+          create: (context) => QuizScreenViewModel(context.read<QuizViewModel>()),
+        ),
+        ChangeNotifierProvider<QuestionViewModel>(
+          create: (context) => QuestionViewModel(context),
         ),
       ],
       builder: (context, _) {
-        final quizViewModelWatcher = context.watch<QuizViewModel>();
-        final reader = context.read<QuizViewModel>();
+        final quizViewModelWatcher = context.watch<QuizScreenViewModel>();
         return SafeArea(
           child: Scaffold(
             backgroundColor: ThemeColors.backgroundColor,
-            appBar: AppBar(
-              elevation: 0,
-              centerTitle: true,
-              backgroundColor: Colors.transparent,
-              actions: [
-                Container(
-                  alignment: Alignment.center,
-                  padding: EdgeInsets.only(right: 10),
-                  child: Text(
-                    "Timer",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: ThemeColors.orange,
-                    ),
-                  ),
-                )
-              ],
-              title: Text(
-                "Quiz",
-                style: TextStyle(
-                  color: ThemeColors.textRed,
-                ),
-              ),
-              leading: Center(
-                child: Text(
-                  "Score: ${quizViewModelWatcher.totalScore}",
-                  style: TextStyle(
-                    color: ThemeColors.textRed,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
             body: quizViewModelWatcher.isLoading
                 ? Loading()
-                : PageView(
-                    physics: NeverScrollableScrollPhysics(),
-                    controller: reader.pageController,
-                    children: quizViewModelWatcher.questions
-                        .map<Widget>(
-                          (question) => SingleChildScrollView(
-                            physics: BouncingScrollPhysics(),
-                            padding: EdgeInsets.symmetric(horizontal: 20),
-                            child: QuestionView(
-                              question: question,
-                            ),
-                          ),
-                        )
-                        .toList(),
+                : Column(
+                    children: [
+                      QuizViewHeader(),
+                      SizedBox(height: 20),
+                      QuizViewBody(),
+                      QuizViewFooter(),
+                    ],
                   ),
-            bottomNavigationBar: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: TextButton(
-                style: ButtonStyle(
-                  overlayColor: MaterialStateProperty.all(
-                      ThemeColors.orangeLight.withOpacity(0.3)),
-                ),
-                onPressed: context.read<QuestionViewmodel>().goToNextQuestion,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 15),
-                  child: Text(
-                    'Next Question',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: ThemeColors.textRed,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ),
         );
       },
+    );
+  }
+}
+
+class QuizViewFooter extends StatelessWidget {
+  const QuizViewFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    final quizViewModelWatcher = context.watch<QuizScreenViewModel>();
+    final questionViewModelReader = context.read<QuestionViewModel>();
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            offset: Offset(0, -1),
+            color: Colors.black12,
+            blurRadius: 1,
+          ),
+        ],
+      ),
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ButtonStyle(
+          backgroundColor:
+              MaterialStateProperty.all(ThemeColors.backgroundColor),
+          overlayColor: MaterialStateProperty.all(
+            ThemeColors.orangeLight.withOpacity(0.3),
+          ),
+        ),
+        onPressed: questionViewModelReader.goToNextQuestion,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 15),
+          child: Text(
+            quizViewModelWatcher.isLastQuestion
+                ? 'See Results'
+                : 'Next Question',
+            style: TextStyle(
+              fontSize: 20,
+              color: ThemeColors.textRed,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class QuizViewBody extends StatelessWidget {
+  const QuizViewBody();
+
+  @override
+  Widget build(BuildContext context) {
+    final quizViewModelWatcher = context.watch<QuizScreenViewModel>();
+    final quizViewModelReader = context.read<QuizScreenViewModel>();
+    return Expanded(
+      child: PageView(
+        onPageChanged: quizViewModelReader.onQuestionChanged,
+        physics: NeverScrollableScrollPhysics(),
+        controller: quizViewModelReader.pageController,
+        children: quizViewModelWatcher.questions
+            .map<Widget>(
+              (question) => SingleChildScrollView(
+                physics: BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: QuestionView(
+                  question: question,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class QuizViewHeader extends StatelessWidget {
+  const QuizViewHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final quizViewModelWatcher = context.watch<QuizViewModel>();
+    final quizScreenViewModelReader = context.read<QuizScreenViewModel>();
+    final questionViewModelReader = context.read<QuestionViewModel>();
+    return Card(
+      color: ThemeColors.backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Score: ${quizViewModelWatcher.totalScore}",
+              style: TextStyle(
+                color: ThemeColors.orange,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            Text(
+              "Quiz",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: ThemeColors.textRed,
+                fontSize: 25,
+              ),
+            ),
+            CircularCountDownTimer(
+              controller: quizScreenViewModelReader.countDownController,
+              duration:
+                  quizScreenViewModelReader.maxTimeAllowedPerQuestion.inSeconds,
+              initialDuration: 0,
+              isReverse: true,
+              // isReverseAnimation: true,
+              height: 35,
+              width: 35,
+              strokeWidth: 3,
+              fillColor: ThemeColors.orangeLight,
+              ringColor: ThemeColors.orange,
+              textFormat: CountdownTextFormat.S,
+              textStyle: TextStyle(
+                color: ThemeColors.textRed,
+                fontSize: 14,
+              ),
+              onComplete: questionViewModelReader.goToNextQuestion,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
